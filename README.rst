@@ -52,6 +52,7 @@ The following subcommands are available:
 :desc:                Show the description of the given bug(s).
 :dump:                Print internal representation of bug data.
 :edit:                Edit the given bugs.
+:field:               Show or update a specific field of given bugs.
 :fields:              List valid values for bug fields.
 :help:                Show help.
 :history:             Show the history of the given bugs.

@@ -83,6 +83,13 @@ def with_pretty(cls):
     return cls
 
 
+def with_field(cls):
+    cls.args = cls.args + [
+        lambda x: x.add_argument('field', metavar='FIELD', help='Field name'),
+    ]
+    return cls
+
+
 def with_bugs(cls):
     cls.args = cls.args + [
         lambda x: x.add_argument('bugs', metavar='BUG', type=int, nargs='+',
@@ -483,6 +490,29 @@ class Edit(BugzillaCommand):
                 for k in self._fields & self._args.__dict__.viewkeys()
             }
             bug.update(**kwargs)
+
+@with_set('given bugs', 'a given field', metavar='VALUE')
+@with_bugs
+@with_field
+class Field(BugzillaCommand):
+    """Show or update a given field of given bugs."""
+    def __call__(self):
+        args = self._args
+        field = args.field
+        for bug in map(self.bz.bug, args.bugs):
+            if field not in bug.data:
+                raise UserWarning("Invalid field:", field)
+            data = bug.data[field]
+            if args.set is not None:
+                kwargs = {
+                    field: args.set if isinstance(data, list) else args.set[0],
+                }
+                bug.update(**kwargs)
+            else:
+                if isinstance(data, list):
+                    data = ', '.join(data)
+                print('Bug {bugno}:\n'
+                      '  {field}: {data}'.format(bugno=bug.bugno, field=field, data=data))
 
 
 class Fields(BugzillaCommand):
