@@ -393,8 +393,8 @@ class Comment(BugzillaCommand):
             print('\n'.join(map(cmtfmt, args.bugs)))
 
 
-@with_set('given bugs', 'depdendencies', metavar='BUG', type=int)
-@with_add_remove('given bugs', 'depdendencies', metavar='BUG', type=int)
+@with_set('given bugs', 'dependencies', metavar='BUG', type=int)
+@with_add_remove('given bugs', 'dependencies', metavar='BUG', type=int)
 @with_bugs
 @with_optional_message
 class Depend(BugzillaCommand):
