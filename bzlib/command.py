@@ -854,7 +854,7 @@ class Search(BugzillaCommand):
     the former takes precendence.
     """
     simple_arguments = ['summary']
-    set_arguments = 'product', 'component', 'status', 'resolution', 'version'
+    set_arguments = 'product', 'component', 'status', 'resolution', 'version', 'assigned_to'
 
     def __call__(self):
         kwargs = {
