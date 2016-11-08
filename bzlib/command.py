@@ -23,6 +23,7 @@ import functools
 import itertools
 import re
 import textwrap
+import pprint
 
 from . import bug as bug_module
 from . import bugzilla
@@ -72,6 +73,14 @@ def with_set(src, dst, metavar=None, type=None):
         ]
         return cls
     return decorator
+
+
+def with_pretty(cls):
+    cls.args = cls.args + [
+        lambda x: x.add_argument('--pretty', action='store_true',
+            help='Try to enhance display'),
+    ]
+    return cls
 
 
 def with_bugs(cls):
@@ -441,12 +450,19 @@ class Desc(BugzillaCommand):
         print('\n'.join(_descfmt(bug) for bug in self._args.bugs))
 
 
+@with_pretty
 @with_bugs
 class Dump(BugzillaCommand):
     """Print internal representation of bug data."""
     def __call__(self):
-        bugs = (self.bz.bug(x) for x in self._args.bugs)
-        print('\n'.join(str((x.data, x.comments)) for x in bugs))
+        args = self._args
+        bugs = (self.bz.bug(x) for x in args.bugs)
+        if args.pretty:
+            for x in bugs:
+                pprint.pprint(x.data)
+                pprint.pprint(x.comments)
+        else:
+            print('\n'.join(str((x.data, x.comments)) for x in bugs))
 
 
 @with_bugs
