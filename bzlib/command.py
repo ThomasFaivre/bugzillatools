@@ -872,5 +872,5 @@ commands = filter(
     lambda x: type(x) == type                     # is a class \
         and issubclass(x, Command)                # is a Command \
         and x not in [Command, BugzillaCommand],  # not abstract
-    locals().items()
+    locals().values()
 )
