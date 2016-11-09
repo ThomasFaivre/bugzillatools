@@ -90,6 +90,13 @@ def with_field(cls):
     return cls
 
 
+def with_id_only(cls):
+    cls.args = cls.args + [
+        lambda x: x.add_argument('--number-only', action='store_true',
+            help='Display bug number only.'),
+    ]
+    return cls
+
 def with_bugs(cls):
     cls.args = cls.args + [
         lambda x: x.add_argument('bugs', metavar='BUG', type=int, nargs='+',
@@ -838,6 +845,7 @@ def _make_set_arguments_group(cls, group):
             help=template.format('NOT ')),
 
 
+@with_id_only
 @with_group('search criteria', _make_set_arguments_group)
 class Search(BugzillaCommand):
     """Search for bugs matching given criteria.
@@ -861,6 +869,10 @@ class Search(BugzillaCommand):
 
         bugs = list(bug_module.Bug.search(self.bz, **kwargs))
         lens = [len(str(b.bugno)) for b in bugs]
+
+        if self._args.number_only:
+            print(' '.join(map(lambda x: str(x.bugno), bugs)))
+            return
 
         for bug in bugs:
             print('Bug {:{}} {}'.format(
