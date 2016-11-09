@@ -137,15 +137,14 @@ def with_limit(things='items', default=None):
     return decorator
 
 
-def with_server(cls):
-    def add_server_args(parser):
-        group = parser.add_argument_group('server arguments')
-        group.add_argument('--server', help='name of Bugzilla server to use')
-        group.add_argument('--url', help='base URL of Bugzilla server')
-        group.add_argument('--user', help='Bugzilla username')
-        group.add_argument('--password', help='Bugzilla password')
-    cls.args = cls.args + [add_server_args]
-    return cls
+def with_group(name, arguments, description=None):
+    def decorator(cls):
+        def add_argument_group(parser):
+            group = parser.add_argument_group(name, description)
+            arguments(cls, group)
+        cls.args = cls.args + [add_argument_group]
+        return cls
+    return decorator
 
 
 class Command(object):
@@ -253,7 +252,14 @@ class Help(Command):
                 self._parser.parse_args([self._args.subcommand, '--help'])
 
 
-@with_server
+def _make_server_arguments_group(cls, group):
+    group.add_argument('--server', help='name of Bugzilla server to use')
+    group.add_argument('--url', help='base URL of Bugzilla server')
+    group.add_argument('--user', help='Bugzilla username')
+    group.add_argument('--password', help='Bugzilla password')
+
+
+@with_group('server arguments', _make_server_arguments_group)
 class BugzillaCommand(Command):
     def __init__(self, *args, **kwargs):
         super(BugzillaCommand, self).__init__(*args, **kwargs)
@@ -816,33 +822,31 @@ class Status(BugzillaCommand):
         )
 
 
-def _make_set_argument(arg):
-    template = 'Only match bugs {{}}of the given {}({})'.format(
-        arg, 's' if arg[-1] != 's' else 'es')
-    return [
-        lambda x: x.add_argument('--' + arg, nargs='+',
+
+def _make_set_arguments_group(cls, group):
+    group.add_argument('--summary', nargs='+',
+        help='Match summary against any of the given substrings.')
+
+    for arg in cls.set_arguments:
+        template = 'Only match bugs {{}}of the given {}({})'.format(
+            arg, 's' if arg[-1] != 's' else 'es')
+        group.add_argument('--' + arg, nargs='+',
             metavar=arg.upper(),
             help=template.format('')),
-        lambda x: x.add_argument('--not-' + arg, nargs='+',
+        group.add_argument('--not-' + arg, nargs='+',
             metavar=arg.upper(),
             help=template.format('NOT ')),
-    ]
 
 
+@with_group('search criteria', _make_set_arguments_group)
 class Search(BugzillaCommand):
     """Search for bugs matching given criteria.
 
     If both '--foo' and '--not-foo' are given for any argument 'foo',
     the former takes precendence.
     """
-    args = BugzillaCommand.args + [
-        lambda x: x.add_argument('--summary', nargs='+',
-            help='Match summary against any of the given substrings.'),
-    ]
     simple_arguments = ['summary']
     set_arguments = 'product', 'component', 'status', 'resolution', 'version'
-    for x in set_arguments:
-        args.extend(_make_set_argument(x))
 
     def __call__(self):
         kwargs = {
