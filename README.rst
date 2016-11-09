@@ -3,7 +3,7 @@ library for interacting with the Bugzilla_ bug tracking system, and
 plugins for version control systems that enable interaction with
 Bugzilla installations.
 
-The only dependency is Python_ 2.7 to Pyhton_ 3.5 and bugzillatools works with
+The only dependency is Python_ 2.7 to Python_ 3.5 and bugzillatools works with
 Bugzilla_ 4.0 or later where the XML-RPC feature is enabled.
 
 .. _Bugzilla: http://www.bugzilla.org/
