@@ -24,7 +24,7 @@ import itertools
 import re
 import textwrap
 
-from . import bug
+from . import bug as bug_module
 from . import bugzilla
 from . import config
 from . import editor
@@ -472,7 +472,6 @@ class Edit(BugzillaCommand):
 class Fields(BugzillaCommand):
     """List valid values for bug fields."""
     def __call__(self):
-        args = self._args
         fields = filter(lambda x: 'values' in x, self.bz.get_fields())
         for field in fields:
             keyfn = lambda x: x.get('visibility_values')
@@ -507,7 +506,6 @@ def _format_history(history):
 class History(BugzillaCommand):
     """Show the history of the given bugs."""
     def __call__(self):
-        fields = ('WHO', 'WHEN', 'WHAT', 'REMOVED', 'ADDED')
         for bug in map(self.bz.bug, self._args.bugs):
             history = []
             for h in bug.history:
@@ -556,7 +554,7 @@ class New(BugzillaCommand):
     """File a new bug."""
     def __call__(self):
         # create new Bug
-        b = bug.Bug(self.bz)
+        b = bug_module.Bug(self.bz)
 
         # get mandatory fields
         fields = self.bz.get_fields()
@@ -811,13 +809,13 @@ class Search(BugzillaCommand):
             if getattr(self._args, arg)
         }
 
-        bugs = list(bug.Bug.search(self.bz, **kwargs))
+        bugs = list(bug_module.Bug.search(self.bz, **kwargs))
         lens = [len(str(b.bugno)) for b in bugs]
 
-        for _bug in bugs:
+        for bug in bugs:
             print('Bug {:{}} {}'.format(
-                str(_bug.bugno) + ':', max(lens) - min(lens) + 2,
-                _bug.data['summary']
+                str(bug.bugno) + ':', max(lens) - min(lens) + 2,
+                bug.data['summary']
             ))
         n = len(bugs)
         print('=> {} bug{} matched criteria'.format(n, 's' if n else ''))
