@@ -340,3 +340,131 @@ class Bug(object):
             if change['field_name'] == 'work_time'
         )
         return sum(hours)
+
+
+class Bugs(list):
+
+    @property
+    def ids(self):
+        return [x.id for x in self]
+
+    @property
+    def data(self):
+        bugs_to_update = Bugs(self.bz, *[bug for bug in self if bug._data is None])
+        if bugs_to_update:
+            ids = bugs_to_update.ids
+            if None in ids:
+                raise Exception("Some bug numbers are not provided.")
+            data = self.rpc('get', ids=ids)['bugs']
+            for i, bug in enumerate(bugs_to_update):
+                bug.data = data[i]
+
+        return [x.data for x in self]
+
+    @data.setter
+    def data(self, value):
+        if not isinstance(value, list) or len(value) != len(self):
+            raise ValueError("Must provide a list of data with the same length as the instance.")
+        for i, bug in enumerate(self):
+            bug.data = value[i]
+
+    @property
+    def history(self):
+        bugs_to_update = Bugs(self.bz, *[bug for bug in self if bug._history is None])
+        if bugs_to_update:
+            ids = bugs_to_update.ids
+            if None in ids:
+                raise Exception("Some bug numbers are not provided.")
+            history = [bug['history'] for bug in self.rpc('history', ids=ids)['bugs']]
+            for i, bug in enumerate(bugs_to_update):
+                bug.history = history[i]
+
+        return [x.history for x in self]
+
+    @history.setter
+    def history(self, value):
+        if not isinstance(value, list) or len(value) != len(self):
+            raise ValueError("Must provide a list of history with the same length as the instance.")
+        for i, bug in enumerate(self):
+            bug.history = value[i]
+
+    @property
+    def comments(self):
+        bugs_to_update = Bugs(self.bz, *[bug for bug in self if bug._comments is None])
+        if bugs_to_update:
+            ids = bugs_to_update.ids
+            if None in ids:
+                raise Exception("Some bug numbers are not provided.")
+            results = self.rpc('comments', ids=ids)
+            for i, bug in enumerate(bugs_to_update):
+                bug.comments = results['bugs'][str(bug.id)]['comments']
+
+        return [x.comments for x in self]
+
+    @comments.setter
+    def comments(self, value):
+        if not isinstance(value, list) or len(value) != len(self):
+            raise ValueError("Must provide a list of history with the same length as the instance.")
+        for i, bug in enumerate(self):
+            bug.comments = value[i]
+
+    def update(self, **kwargs):
+        """Update the bugs in the list.
+
+        A wrapper for the RPC ``bug.update`` method that performs some sanity
+        checks and flushes cached data as necessary.
+        """
+        # filter out ``None``s
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        # format deadline (YYYY-MM-DD)
+        if 'deadline' in kwargs:
+            date = kwargs['deadline']
+            if isinstance(date, datetime.datetime):
+                date = date.date()  # get date component of a datetime
+            kwargs['deadline'] = str(date)  # datetime.date formats in ISO
+
+        result = self.rpc('update', ids=self.ids, **kwargs)
+        self.data = None  # data is stale
+        self.history = None  # history is stale
+        if 'comment' in kwargs:
+            self.comments = None  # comments are stale
+        return result
+
+    def _to_Bug(self, value):
+        if isinstance(value, Bug):
+            if value.bz != self.bz:
+                raise Exception("All bugs must use the same Bugzilla.")
+            return value
+        else:
+            return Bug(self.bz, value)
+
+    def __init__(self, bz, *values):
+        """Create a list of bug object with helper methods.
+
+        bz: a bzlib.Bugzilla object. Must be the same in every Bug object.
+        values: a list of bug identifier. The bug identifier can directly be a
+                instance of Bug, or the bugno_or_data object that will be used
+                to create a Bug object.
+        """
+        self.bz = bz
+        super(Bugs, self).__init__([self._to_Bug(val) for val in values])
+
+    def __setitem__(self, index, value):
+        super(Bugs, self).__setitem__(index, self._to_Bug(object))
+
+    def insert(self, index, object):
+        super(Bugs, self).insert(index, self._to_Bug(object))
+
+    def append(self, object):
+        super(Bugs, self).append(self._to_Bug(object))
+
+    def extend(self, iterable):
+        super(Bugs, self).extend([self._to_Bug(val) for val in iterable])
+
+    def rpc(self, *args, **kwargs):
+        """Does an RPC on the Bugzilla server.
+
+        Prepends 'Bug' to the method name.
+        """
+        return self.bz.rpc(*(('Bug',) + args), **kwargs)
+
