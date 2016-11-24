@@ -15,6 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from . import (
+    bug,
+    bugzilla,
+    config,
+)
+
+__all__ = [
+    'bug',
+    'bugzilla',
+    'config',
+]
+
+
 version_info = (0, 6, 0, 'final', 0)
 
 version_fmt = '{0}.{1}'
